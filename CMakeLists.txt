@@ -35,6 +35,12 @@ FetchContent_Declare(
   URL "https://github.com/epezent/implot/archive/refs/tags/v0.16.zip"
 )
 
+# Fetch GLFW for OpenGL
+FetchContent_Declare(
+	glfw
+	URL "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip"
+)
+
 # SFML
 option(SFML_BUILD_AUDIO "Build audio" OFF)
 option(SFML_BUILD_NETWORK "Build network" OFF)
@@ -64,6 +70,9 @@ target_include_directories(implot PUBLIC
   ${imgui_SOURCE_DIR}
 )
 
+# GLFW
+FetchContent_MakeAvailable(glfw)
+
 
 ## ***** Linking ******
 
@@ -71,7 +80,7 @@ target_include_directories(implot PUBLIC
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 # Add executable
-add_executable(PlateAndBall PlateAndBall.cpp ${PROJECT_SOURCES})
+add_executable(PlateAndBall PlateAndBall.cpp ${PROJECT_SOURCES} "glad/src/glad.c")
 
 # Link libraries
 target_link_libraries(PlateAndBall PRIVATE
@@ -80,11 +89,12 @@ target_link_libraries(PlateAndBall PRIVATE
   sfml-system
   ImGui-SFML::ImGui-SFML
   implot
+  glfw
 )
 
 
 # Include directories
-target_include_directories(PlateAndBall PRIVATE ${imgui_SOURCE_DIR} ${implot_SOURCE_DIR} src)
+target_include_directories(PlateAndBall PRIVATE ${imgui_SOURCE_DIR} ${implot_SOURCE_DIR} src glad/include/)
 
 
 # Suppress specific warnings

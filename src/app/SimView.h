@@ -3,6 +3,8 @@
 
 class SimView {
 public:
+    SimView();
+
     void update();
     void render(sf::RenderWindow& window);
 };

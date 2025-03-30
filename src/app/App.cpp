@@ -1,9 +1,18 @@
 #include "app/App.h"
+#include "app/GuiLayer.h"
 #include <imgui-SFML.h>
+#include <implot.h>
 
-App::App() : window(sf::VideoMode::getDesktopMode(), "Ball on Plate") {
+App::App() : window(sf::VideoMode::getDesktopMode(), "Ball on Plate"),
+             gui(0.3),
+             view()
+{
     window.setFramerateLimit(60);
     ImGui::SFML::Init(window);
+    ImPlot::CreateContext();
+
+    // Set the proportion of the screen that the GUI will fill.
+    gui = GuiLayer(0.3);
 }
 
 void App::run() {
@@ -13,12 +22,14 @@ void App::run() {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-            //this->handleEvents(event);
+            if (event.has_value()) {
+                this->handleEvents(event.value());
+            }
         }
 
         ImGui::SFML::Update(window, deltaClock.restart());
 
-        //gui.update();       // ImGui widgets + plots
+        gui.update(this->window);
         //view.update();      // Simulation view rendering
 
         window.clear();
@@ -26,7 +37,7 @@ void App::run() {
         ImGui::SFML::Render(window);
         window.display();
     }
-
+    ImPlot::DestroyContext();
     ImGui::SFML::Shutdown();
 }
 
