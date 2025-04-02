@@ -35,12 +35,6 @@ FetchContent_Declare(
   URL "https://github.com/epezent/implot/archive/refs/tags/v0.16.zip"
 )
 
-# Fetch GLFW for OpenGL
-FetchContent_Declare(
-	glfw
-	URL "https://github.com/glfw/glfw/archive/refs/tags/3.4.zip"
-)
-
 # SFML
 option(SFML_BUILD_AUDIO "Build audio" OFF)
 option(SFML_BUILD_NETWORK "Build network" OFF)
@@ -70,9 +64,6 @@ target_include_directories(implot PUBLIC
   ${imgui_SOURCE_DIR}
 )
 
-# GLFW
-FetchContent_MakeAvailable(glfw)
-
 
 ## ***** Linking ******
 
@@ -89,7 +80,6 @@ target_link_libraries(PlateAndBall PRIVATE
   sfml-system
   ImGui-SFML::ImGui-SFML
   implot
-  glfw
 )
 
 

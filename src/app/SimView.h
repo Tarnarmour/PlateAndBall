@@ -4,7 +4,14 @@
 class SimView {
 public:
     SimView();
+    ~SimView();
+    void initialize(sf::RenderWindow& window, float size);
+    void render(sf::RenderWindow& window, float t);
+private:
+    unsigned int shaderProgram;
+    unsigned int VAO, VBO, EBO;
+    bool initialized;
 
-    void update();
-    void render(sf::RenderWindow& window);
+    std::vector<float> vertices;
+    std::vector<unsigned int> indices;
 };
