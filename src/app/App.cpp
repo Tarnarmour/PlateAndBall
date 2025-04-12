@@ -8,12 +8,15 @@
 #include <math.h>
 
 App::App() : window(sf::VideoMode::getDesktopMode(),
-                    "Ball on Plate",
-                    sf::Style::Default,
-                    sf::State::Windowed,
-                    sf::ContextSettings(24, 8, 4, 3, 3)) // Set OpenGL context settings: depth-buffer = 24 bits, stencil buffer = 8 bits, anti-aliasing = 4, OpenGL version 3.3, OpenGL CORE settings
+    "Ball on Plate",
+    sf::Style::Default,
+    sf::State::Windowed,
+    sf::ContextSettings(24, 8, 4, 3, 3)) // Set OpenGL context settings: depth-buffer = 24 bits, stencil buffer = 8 bits, anti-aliasing = 4, OpenGL version 3.3, OpenGL CORE settings
 
 {
+}
+
+bool App::initialize() {
     window.setFramerateLimit(60);
     if (!ImGui::SFML::Init(window))
         std::cout << "Error initializing SFML window!" << std::endl;
@@ -24,10 +27,13 @@ App::App() : window(sf::VideoMode::getDesktopMode(),
 
     // Initialize the OpenGL view port, with view port size.
     //view.initialize(window, 0.3);
+
+    system.setState(System::State(0.05, 0.05, 0.0, 0.0));
+
+    return true;
 }
 
 void App::run() {
-    System plant(System::State(0.75f, 0.f, 0.f, 0.3f));
 
     sf::Clock deltaClock;
     sf::Clock simClock;
@@ -48,13 +54,13 @@ void App::run() {
             }
         }
         ImGui::SFML::Update(window, deltaClock.restart());
-        window.clear();
+            window.clear();
 
 
-        System::State state = plant.getState();
+        System::State state = system.getState();
         System::Input u = {state.x * 0.001 + state.vx * 0.002, state.y * 0.001 + state.vy * 0.0005 };
-        plant.step(dt, u);
-        state = plant.getState();
+        system.step(dt, u);
+        state = system.getState();
 
         gui.updateData(currentTime, state, u);
         gui.renderPlot(window);

@@ -5,13 +5,10 @@ class SimView {
 public:
     SimView();
     ~SimView();
-    void initialize(sf::RenderWindow& window, float size);
+    bool initialize(sf::RenderWindow& window, float size);
     void render(sf::RenderWindow& window, float t);
 private:
-    unsigned int shaderProgram;
-    unsigned int VAO, VBO, EBO;
-    bool initialized;
-
-    std::vector<float> vertices;
-    std::vector<unsigned int> indices;
+    unsigned int plateShaderProgram = 0;
+    unsigned int VAO, VBO, EBO = 0;
+    bool initialized = false;
 };

@@ -19,7 +19,19 @@ const char* fragmentShaderSource = "#version 330\n"
 "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
 "}\0";
 
-SimView::SimView() : initialized(false), VAO(0), VBO(0), EBO(0), shaderProgram(0) {
+float plateVertices[] {
+    -0.1f, -0.1f, -0.01f,
+    0.1f, -0.1f, -0.1f,
+    -0.1f, 0.1f, -0.01f,
+    0.1f, 0.1f, -0.1f
+};
+
+unsigned int plateIndices []{
+    0, 1, 2,
+    1, 2, 3,
+};
+ 
+SimView::SimView()  {
 }
 
 SimView::~SimView() {
@@ -27,69 +39,56 @@ SimView::~SimView() {
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
         glDeleteBuffers(1, &EBO);
-        glDeleteProgram(shaderProgram);
+        glDeleteProgram(plateShaderProgram);
     }
 }
 
-void SimView::initialize(sf::RenderWindow& window, float size) {
+bool SimView::initialize(sf::RenderWindow& window, float size) {
     gladLoadGL();
 
-    // Set the view port to take up a portion of the left side of the screen.
-    float gap(0.1);
-    glViewport(gap * window.getSize().x, gap * window.getSize().y,
-        window.getSize().x * (size - gap), window.getSize().y);
-
-    // Compile vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
+    // Load and compile the plate vertex shader
+    unsigned int plateVertexShader;
+    plateVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(plateVertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(plateVertexShader);
     int success;
     char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(plateVertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        glGetShaderInfoLog(plateVertexShader, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        return false;
     }
 
-    // Compile fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    // Likewise with the fragment shader
+    unsigned int plateFragmentShader;
+    plateFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(plateFragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(plateFragmentShader);
+    glGetShaderiv(plateFragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        glGetShaderInfoLog(plateFragmentShader, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+        return false;
     }
 
-    // Link shaders
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    // Link the pipeline of the vertex and fragment shader together into a program,
+    // which could be used by calling `glUseProgram(plateShaderProgram);`
+    plateShaderProgram = glCreateProgram();
+    glAttachShader(plateShaderProgram, plateVertexShader);
+    glAttachShader(plateShaderProgram, plateFragmentShader);
+    glLinkProgram(plateShaderProgram);
+    glGetProgramiv(plateShaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::PROGRAM::LINKING::COMPILATION_FAILED\n" << infoLog << std::endl;
+        glGetProgramInfoLog(plateShaderProgram, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+        return false;
     }
 
-    // Delete shaders as they're now linked to the program
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader); // Fixed: was deleting vertexShader twice
+    // Clean up the individual shaders (now that they are linked in the program).
+    glDeleteShader(plateVertexShader);
+    glDeleteShader(plateFragmentShader);
 
-    // Setup vertex data
-    vertices = {
-        -0.5f, -0.5f, 0.0f,  // bottom left
-         0.5f, -0.5f, 0.0f,  // bottom right
-         0.0f,  0.5f, 0.0f   // top
-    };
-    indices = {
-        0, 1, 2  // first triangle
-    };
-
-    // Generate and bind buffers - only do this once
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -97,50 +96,35 @@ void SimView::initialize(sf::RenderWindow& window, float size) {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(plateVertices), plateVertices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(plateIndices), plateIndices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Unbind to prevent unintentional modifications
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+    std::cout << "Successfully initialized OpenGL!" << std::endl;
     initialized = true;
-
-    // Check for errors
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR) {
-        std::cout << "OpenGL error during initialization: " << err << std::endl;
-    }
+    return true;
 }
 
 void SimView::render(sf::RenderWindow& window, float t) {
     if (!initialized) return;
 
+    // Set the view port to take up a portion of the left side of the screen.
+    glViewport(0, 0, window.getSize().x * 0.5f, window.getSize().y);
+
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    vertices = {
-        -0.5f + std::sin(t) * 0.25f, -0.5f, 0.0f,  // bottom left
-         0.5f + std::cos(t) * 0.25f, -0.5f, 0.0f,  // bottom right
-         0.0f - std::sin(t) * 0.25f,  0.5f, 0.0f   // top
-    };
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), vertices.data());
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // Use the shader program and draw
-    glUseProgram(shaderProgram);
+    glUseProgram(plateShaderProgram);
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-
-    // Unbind VAO when done
-    glBindVertexArray(0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // Check for errors
     GLenum err;
